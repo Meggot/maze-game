@@ -10,8 +10,7 @@ export class MapService {
     public spawnCube: THREE.Mesh;
     public targetCube: THREE.Mesh;
 
-    public pixelSize: 1;
-
+    public pixelSize: number = .25;
     public scene: THREE.Scene;
 
     setup(scene: THREE.Scene): void {
@@ -22,9 +21,8 @@ export class MapService {
     }
 
     setupSpawnCube(){
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshBasicMaterial({color: 0x00ff00});
-        material.wireframe = true
+        const geometry = new THREE.BoxGeometry(this.pixelSize, this.pixelSize, this.pixelSize);
+        const material = new THREE.MeshBasicMaterial({color: "green"});
         this.spawnCube = new THREE.Mesh(geometry, material);
         this.spawnCube.position.x = -25
         this.spawnCube.position.y = 20
@@ -33,7 +31,7 @@ export class MapService {
     }
 
     setupTargetCube(){
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const geometry = new THREE.BoxGeometry(this.pixelSize, this.pixelSize, this.pixelSize);
         const material = new THREE.MeshBasicMaterial({color: 0xFF0000});
         this.targetCube = new THREE.Mesh(geometry, material);
         this.targetCube.position.x = 0;
@@ -49,7 +47,6 @@ export class MapService {
         alphaObstruction.position.x = -5;
         alphaObstruction.position.y = 1;
         alphaObstruction.position.z = 0;
-        material.wireframe = true
         this.scene.add(alphaObstruction);
     }
 }

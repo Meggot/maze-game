@@ -8,8 +8,8 @@ export class Node {
         public parent: Node,
         public xPos: number,
         public yPos: number,
-        public gCost: number,
-        public hCost) {
+        public hCost: number,
+        public gCost) {
             this.fCost = gCost + hCost;
         }
 
@@ -19,7 +19,7 @@ export class Node {
             " xPos:" + this.xPos +
             " yPos: " + this.yPos +
             " gCost: " + this.gCost + 
-            " xCost: " + this.hCost +
+            " hCost: " + this.hCost +
             " fCost: " + this.fCost
         }
 }

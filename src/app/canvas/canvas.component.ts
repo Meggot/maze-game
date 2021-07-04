@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { MapService } from '../game-states/map.services';
-import { PathServices } from '../game-states/path.services';
+import { Astar } from '../game-states/astar.services';
 import { CanvasService } from './canvas.service';
 
 @Component({
@@ -16,7 +16,7 @@ export class CanvasComponent implements OnInit {
 
   public constructor(private canvasService: CanvasService,
     private mapService: MapService,
-    private pathService: PathServices) {
+    private pathService: Astar) {
   }
 
   public ngOnInit(): void {
