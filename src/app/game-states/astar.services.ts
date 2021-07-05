@@ -63,8 +63,8 @@ export class Astar {
                 } else if (neighbourNode.fCost < currentNode.fCost || this.isNodeInArray(neighbourNode, this.openNodes)) {
                     neighbourNode.gCost = this.measureDistance(this.mapService.targetCube.position.x,
                         this.mapService.targetCube.position.y,
-                        currentNode.xPos,
-                        currentNode.yPos);
+                        neighbourNode.xPos,
+                        neighbourNode.yPos);
                     var hCost = this.measureDistance(neighbourNode.xPos,
                         neighbourNode.yPos,
                         currentNode.xPos,

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ElementRef, Injectable, NgZone, OnDestroy } from '@angular/core';
-import { Raycaster, Vector2, Camera } from 'three';
+import { Raycaster, Vector2 } from 'three';
 import { MapService } from '../game-states/map.services';
 
 @Injectable({ providedIn: 'root' })
@@ -8,6 +8,7 @@ export class CanvasService implements OnDestroy {
     private canvas: HTMLCanvasElement;
     private renderer: THREE.WebGLRenderer;
     private camera: THREE.PerspectiveCamera;
+
     public scene: THREE.Scene;
     private light: THREE.AmbientLight;
     private frameId: number = null;
@@ -40,6 +41,13 @@ export class CanvasService implements OnDestroy {
             10, window.innerWidth / window.innerHeight, 0.2, 1000
         );
         this.camera.position.z = 250;
+
+        // const near = 1;
+        // const far = 300;
+        // this.camera = new THREE.OrthographicCamera(0, 300, 0, 150, near, far);
+        // this.camera.zoom = 1;
+        // this.camera.position.set(0, 0, 250);
+
         this.scene.add(this.camera);
 
         // soft white light
@@ -66,7 +74,13 @@ export class CanvasService implements OnDestroy {
                 this.resize();
             });
             window.addEventListener('mousedown', (event) => {
+                this.onMouseDown(event);
+            });
+            window.addEventListener('mousemove', (event) => {
                 this.onMouseMove(event);
+            });
+            window.addEventListener('mouseup', (event) => {
+                this.onMouseUp(event);
             });
         });
     }
@@ -95,16 +109,35 @@ export class CanvasService implements OnDestroy {
     raycaster: Raycaster = new THREE.Raycaster();
     mouse: Vector2 = new THREE.Vector2();
 
+    painting: Boolean;
+
+    onMouseDown(event) {
+        this.painting = true;
+        this.paintObstructionAtXY(event.clientX, event.clientY)
+    }
+
+    onMouseUp(event) {
+        this.painting = false;
+    }
+
     onMouseMove(event) {
-        this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        if (this.painting) {
+            this.paintObstructionAtXY(event.clientX,
+                event.clientY);
+        }
+    }
+
+    paintObstructionAtXY(posX, posY) {
+        this.painting = true
+        this.mouse.x = (posX / window.innerWidth) * 2 - 1;
+        this.mouse.y = -(posY / window.innerHeight) * 2 + 1;
         console.log(this.camera)
-        this.raycaster.setFromCamera(this.mouse, this.camera)
+        this.raycaster.setFromCamera(this.mouse, this.camera);
         var instersectVector = new THREE.Vector3();
         const intersects = this.raycaster.ray.intersectPlane(this.mapService.plane,
             instersectVector);
-        const xPos = Math.round(intersects.x)
-        const yPos = Math.round(intersects.y)
+        const xPos = Math.round(instersectVector.x)
+        const yPos = Math.round(instersectVector.y)
         this.mapService.createObstructionAt(xPos, yPos)
     }
 }

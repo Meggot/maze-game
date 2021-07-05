@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { Injectable } from '@angular/core';
-import { Box3 } from 'three';
 
 @Injectable({ providedIn: 'root' })
 export class MapService {
