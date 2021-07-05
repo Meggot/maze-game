@@ -25,18 +25,29 @@ export class Astar {
     }
 
     async pathFind() {
+        this.openNodes = new Array();
+        this.closedNodes = new Array();
+        this.pathingNodes = new Array();
+
         var startNode = this.createNodeFromAt(
             null,
-            1000,
-            1000,
+            2000,
+            2000,
             this.mapService.spawnCube.position.x,
             this.mapService.spawnCube.position.y);
 
         this.openNodes.push(startNode);
         var currentNode: Node;
         while (true) {
+            if (this.closedNodes.length > 10000) {
+                console.log("Path cannot be found.")
+                break;
+            }
             currentNode = this.findLowestFCostInArray(this.openNodes);
-            this.renderNode(currentNode, "green")
+            if (currentNode == undefined) {
+                console.log("Path is unreachable..")
+                return;
+            }
             this.removeNodeFromArray(currentNode, this.openNodes);
             this.closedNodes.push(currentNode)
             if (this.isNodeOnTarget(currentNode)) {
@@ -49,7 +60,6 @@ export class Astar {
                 if (!this.isTraversable(neighbourNode) || this.isNodeInArray(neighbourNode, this.closedNodes)) {
                     this.renderNode(neighbourNode, "black")
                     this.closedNodes.push(neighbourNode)
-                    console.log('not traversable, or in closed')
                 } else if (neighbourNode.fCost < currentNode.fCost || this.isNodeInArray(neighbourNode, this.openNodes)) {
                     neighbourNode.gCost = this.measureDistance(this.mapService.targetCube.position.x,
                         this.mapService.targetCube.position.y,
@@ -68,102 +78,90 @@ export class Astar {
                     if (!this.isNodeInArray(neighbourNode, this.openNodes)) {
                         this.openNodes.push(neighbourNode);
                     }
+                } else {
+                    this.openNodes.push(neighbourNode)
                 }
 
             })
         }
     }
+    getNodeIfExists(posX: number, posY: number) {
+        var node = this.getNodeByCoordsInArray(posX, posY, this.openNodes);
+        if (node == null) {
+            node = this.getNodeByCoordsInArray(posX, posY, this.closedNodes);
+        }
+        return node;
+    }
 
     generateNeighbourNodes(node: Node): Node[] {
         var neighbours: Node[] = Array();
-        // //TOP RIGHT
-        // var newNodeXPos = node.xPos + this.mapService.pixelSize;
-        // var newNodeYPos = node.yPos + this.mapService.pixelSize;
-        // neighbours.push(this.createNodeFromAt(
-        //     node,
-        //     node.xPos,
-        //     node.yPos,
-        //     newNodeXPos,
-        //     newNodeYPos))
-        //TOP LEFT
-        // var newNodeXPos = node.xPos - this.mapService.pixelSize;
-        // var newNodeYPos = node.yPos + this.mapService.pixelSize;
-        // neighbours.push(this.createNodeFromAt(
-        //     node,
-        //     node.xPos,
-        //     node.yPos,
-        //     newNodeXPos,
-        //     newNodeYPos))
-        //TOP MIDDLE
         var newNodeXPos = node.xPos;
         var newNodeYPos = node.yPos + this.mapService.pixelSize;
-        neighbours.push(this.createNodeFromAt(
-            node,
-            node.xPos,
-            node.yPos,
-            newNodeXPos,
-            newNodeYPos));
-        //RIGHT MIDDLE
+        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
+
         var newNodeXPos = node.xPos + this.mapService.pixelSize;
         var newNodeYPos = node.yPos;
-        neighbours.push(this.createNodeFromAt(
-            node,
-            node.xPos,
-            node.yPos,
-            newNodeXPos,
-            newNodeYPos));
-        // //BOTTOM RIGHT
-        // var newNodeXPos = node.xPos + this.mapService.pixelSize;
-        // var newNodeYPos = node.yPos - this.mapService.pixelSize;
-        // neighbours.push(this.createNodeFromAt(
-        //     node,
-        //     node.xPos,
-        //     node.yPos,
-        //     newNodeXPos,
-        //     newNodeYPos));
-        //MIDDLE LEFT
+        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
+
         var newNodeXPos = node.xPos - this.mapService.pixelSize;
         var newNodeYPos = node.yPos;
-        neighbours.push(this.createNodeFromAt(
-            node,
-            node.xPos,
-            node.yPos,
-            newNodeXPos,
-            newNodeYPos));
-        //BOTTOM MIDDLE
+        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
+
         var newNodeXPos = node.xPos;
         var newNodeYPos = node.yPos - this.mapService.pixelSize;
-        neighbours.push(this.createNodeFromAt(
-            node,
-            node.xPos,
-            node.yPos,
-            newNodeXPos,
-            newNodeYPos));
-        // //BOTTOM LEFT
-        // var newNodeXPos = node.xPos - this.mapService.pixelSize;
-        // var newNodeYPos = node.yPos - this.mapService.pixelSize;
-        // neighbours.push(this.createNodeFromAt(
-        //     node,
-        //     node.xPos,
-        //     node.yPos,
-        //     newNodeXPos,
-        //     newNodeYPos));
+        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
+
+        var newNodeXPos = node.xPos - this.mapService.pixelSize;
+        var newNodeYPos = node.yPos - this.mapService.pixelSize;
+        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
+
+        var newNodeXPos = node.xPos + this.mapService.pixelSize;
+        var newNodeYPos = node.yPos - this.mapService.pixelSize;
+        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
+
+        var newNodeXPos = node.xPos - this.mapService.pixelSize;
+        var newNodeYPos = node.yPos + this.mapService.pixelSize;
+        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
+
+        var newNodeXPos = node.xPos + this.mapService.pixelSize
+        var newNodeYPos = node.yPos + this.mapService.pixelSize;
+        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
         return neighbours;
     }
 
+    private createNodeOrGetIfExists(newNodeXPos: number, newNodeYPos: number, node: Node, neighbours: Node[]) {
+        var newNode = this.getNodeIfExists(newNodeXPos, newNodeYPos);
+        if (newNode == undefined) {
+            newNode = this.createNodeFromAt(
+                node,
+                node.xPos,
+                node.yPos,
+                newNodeXPos,
+                newNodeYPos);
+        }
+        neighbours.push(newNode);
+    }
+
     isTraversable(node: Node): Boolean {
-        return true;
+        var traversable = true;
+        this.mapService.obstructions.forEach(obstruction => {
+            if (obstruction.position.x == node.xPos &&
+                obstruction.position.y == node.yPos) {
+                traversable = false;
+                return traversable;
+            }
+        })
+        return traversable;
     }
 
     isNodeOnTarget(node: Node): Boolean {
         if (node.xPos == this.mapService.targetCube.position.x &&
             node.yPos == this.mapService.targetCube.position.y) {
-            console.log(node.toString() + " IS ON TARGET!")
             var pointerNodeId = node.id
             this.pathingNodes.push(node)
             while (pointerNodeId != 1) {
                 if (node.parent == null) {
-                    console.log('found path, it is ' + this.pathingNodes.length)
+                    console.log('Found path, it is ' + this.pathingNodes.length + "long!")
                     break;
                 }
                 this.pathingNodes.push(node.parent)
@@ -175,6 +173,15 @@ export class Astar {
             return true;
         }
         return false;
+    }
+
+    getNodeByCoordsInArray(posX, posY, array: Node[]): Node {
+        const objIndex = array.findIndex(obj => obj.xPos === posX &&
+            obj.yPos === posY);
+        if (objIndex > -1) {
+            return array[objIndex];
+        }
+        return null;
     }
 
     isNodeInArray(node: Node, array: Node[]): Boolean {
@@ -237,8 +244,8 @@ export class Astar {
             yPosition,
             startX,
             startY);
-        if (parentNode!=null) {
-             hCost += parentNode.hCost;
+        if (parentNode != null) {
+            hCost += parentNode.hCost;
         }
         var drawnNode = new Node(
             this.lastId,
