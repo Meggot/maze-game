@@ -64,7 +64,7 @@ export class Astar {
                     neighbourNode.gCost = this.measureDistance(this.mapService.targetCube.position.x,
                         this.mapService.targetCube.position.y,
                         neighbourNode.xPos,
-                        neighbourNode.yPos);
+                        neighbourNode.yPos) * 2;
                     var hCost = this.measureDistance(neighbourNode.xPos,
                         neighbourNode.yPos,
                         currentNode.xPos,
