@@ -14,7 +14,6 @@ jobs:
       - uses: actions/checkout@v1
       - name: npm ci and npm run build
         run: |
-          cd oulipo-webapp
           npm install
           npm run build:prod
       - name: Configure AWS Credentials
