@@ -1,26 +1,31 @@
 import { Injectable } from "@angular/core";
-import * as THREE from "three";
-import { BufferGeometry, Line, LineBasicMaterial, Path, Scene, Vector2 } from "three";
+import { Scene } from "three";
 import { MapService } from "./map.services";
 import { Node } from '../models/nodes';
+import { NodeService } from './nodes.services';
 
 @Injectable({ providedIn: 'root' })
 export class Astar {
 
     scene: Scene;
-    mapService: MapService;
-
-    lastId: number = 0;
 
     openNodes: Node[] = new Array();
     closedNodes: Node[] = new Array();
-
     pathingNodes: Node[] = new Array();
 
-    setup(mapService: MapService,
-        scene: Scene) {
-        this.mapService = mapService;
+    constructor(private nodeService: NodeService,
+        private mapService: MapService) {
+
+        }
+
+    setup(scene: Scene) {
         this.scene = scene;
+
+        this.openNodes = new Array();
+        this.closedNodes = new Array();
+        this.pathingNodes = new Array();
+        
+        this.mapService.setup(scene);
         this.pathFind();
     }
 
@@ -29,159 +34,79 @@ export class Astar {
         this.closedNodes = new Array();
         this.pathingNodes = new Array();
 
-        var startNode = this.createNodeFromAt(
-            null,
-            2000,
-            2000,
-            this.mapService.spawnCube.position.x,
-            this.mapService.spawnCube.position.y);
-
+        console.log(this.mapService.startTile)
+        var startNode = this.nodeService.creatStartNode();
         this.openNodes.push(startNode);
+
         var currentNode: Node;
         while (true) {
             if (this.closedNodes.length > 10000) {
                 console.log("Path cannot be found.")
                 break;
             }
+            if (this.openNodes.length == 0) {
+                console.log("Path cannot be found")
+                break;
+            }
             currentNode = this.findLowestFCostInArray(this.openNodes);
             if (currentNode == undefined) {
                 console.log("Path is unreachable..")
-                return;
+                break;
             }
             this.removeNodeFromArray(currentNode, this.openNodes);
             this.closedNodes.push(currentNode)
+
             if (this.isNodeOnTarget(currentNode)) {
                 console.log('Path has been found!')
-                return;
+                break;
             }
-            var neigbours = this.generateNeighbourNodes(currentNode)
+            var neigbours = this.nodeService.generateNeighbourNodes(currentNode)
             neigbours.forEach(neighbourNode => {
-                this.renderNode(neighbourNode, "red")
+                console.log(neighbourNode)
+                console.log("vs")
+                console.log(currentNode)
                 if (!this.isTraversable(neighbourNode) || this.isNodeInArray(neighbourNode, this.closedNodes)) {
-                    this.renderNode(neighbourNode, "black")
+                    console.log("Adding node " + currentNode + " To closed nodes.")
                     this.closedNodes.push(neighbourNode)
-                } else if (neighbourNode.fCost < currentNode.fCost || this.isNodeInArray(neighbourNode, this.openNodes)) {
-                    neighbourNode.gCost = this.measureDistance(this.mapService.targetCube.position.x,
-                        this.mapService.targetCube.position.y,
-                        neighbourNode.xPos,
-                        neighbourNode.yPos) * 2;
-                    var hCost = this.measureDistance(neighbourNode.xPos,
-                        neighbourNode.yPos,
-                        currentNode.xPos,
-                        currentNode.yPos);
-                    if (neighbourNode.parent != null) {
-                        neighbourNode.hCost += neighbourNode.parent.hCost;
-                    }
-                    neighbourNode.hCost = hCost;
-                    neighbourNode.fCost = neighbourNode.gCost + neighbourNode.hCost;
-                    currentNode = neighbourNode.parent;
-                    if (!this.isNodeInArray(neighbourNode, this.openNodes)) {
-                        this.openNodes.push(neighbourNode);
-                    }
-                } else {
-                    this.openNodes.push(neighbourNode)
+                } else if (neighbourNode.fCost <= currentNode.fCost || this.isNodeInArray(neighbourNode, this.openNodes)) {
+                    console.log("Adding node " + currentNode + "To open nodes.")
+                    this.openNodes.push(neighbourNode);
                 }
-
             })
         }
     }
-    getNodeIfExists(posX: number, posY: number) {
-        var node = this.getNodeByCoordsInArray(posX, posY, this.openNodes);
-        if (node == null) {
-            node = this.getNodeByCoordsInArray(posX, posY, this.closedNodes);
-        }
-        return node;
-    }
-
-    generateNeighbourNodes(node: Node): Node[] {
-        var neighbours: Node[] = Array();
-        var newNodeXPos = node.xPos;
-        var newNodeYPos = node.yPos + this.mapService.pixelSize;
-        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
-
-        var newNodeXPos = node.xPos + this.mapService.pixelSize;
-        var newNodeYPos = node.yPos;
-        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
-
-        var newNodeXPos = node.xPos - this.mapService.pixelSize;
-        var newNodeYPos = node.yPos;
-        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
-
-        var newNodeXPos = node.xPos;
-        var newNodeYPos = node.yPos - this.mapService.pixelSize;
-        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
-
-        var newNodeXPos = node.xPos - this.mapService.pixelSize;
-        var newNodeYPos = node.yPos - this.mapService.pixelSize;
-        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
-
-        var newNodeXPos = node.xPos + this.mapService.pixelSize;
-        var newNodeYPos = node.yPos - this.mapService.pixelSize;
-        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
-
-        var newNodeXPos = node.xPos - this.mapService.pixelSize;
-        var newNodeYPos = node.yPos + this.mapService.pixelSize;
-        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
-
-        var newNodeXPos = node.xPos + this.mapService.pixelSize
-        var newNodeYPos = node.yPos + this.mapService.pixelSize;
-        this.createNodeOrGetIfExists(newNodeXPos, newNodeYPos, node, neighbours);
-        return neighbours;
-    }
-
-    private createNodeOrGetIfExists(newNodeXPos: number, newNodeYPos: number, node: Node, neighbours: Node[]) {
-        var newNode = this.getNodeIfExists(newNodeXPos, newNodeYPos);
-        if (newNode == undefined) {
-            newNode = this.createNodeFromAt(
-                node,
-                node.xPos,
-                node.yPos,
-                newNodeXPos,
-                newNodeYPos);
-        }
-        neighbours.push(newNode);
-    }
-
     isTraversable(node: Node): Boolean {
-        var traversable = true;
-        this.mapService.obstructions.forEach(obstruction => {
-            if (obstruction.position.x == node.xPos &&
-                obstruction.position.y == node.yPos) {
-                traversable = false;
-                return traversable;
-            }
-        })
-        return traversable;
+        var isTraversable = node.tile.isTraversable;
+        if  (node.xPos == 5 &&  node.yPos !=2)  {
+            return false;
+        }
+        if (!isTraversable){
+            console.log("Node " + node + " is NOT Traversable.")
+            return false;
+        }
+        return isTraversable;
     }
 
     isNodeOnTarget(node: Node): Boolean {
-        if (node.xPos == this.mapService.targetCube.position.x &&
-            node.yPos == this.mapService.targetCube.position.y) {
-            var pointerNodeId = node.id
+        if (node.xPos == this.mapService.targetTile.mesh.position.x &&
+            node.yPos == this.mapService.targetTile.mesh.position.y) {
             this.pathingNodes.push(node)
-            while (pointerNodeId != 1) {
+            while (node.id != 1) {
                 if (node.parent == null) {
                     console.log('Found path, it is ' + this.pathingNodes.length + "long!")
                     break;
                 }
-                this.pathingNodes.push(node.parent)
+                this.pathingNodes.push(node)
                 node = node.parent;
             }
-            this.pathingNodes.forEach(pathingnode => {
-                this.renderNode(pathingnode, "yellow")
+            this.pathingNodes.forEach(pathNode => {
+                console.log("Setting " + pathNode + " as yellow..")
+                pathNode.tile.setColour("yellow")
+                this.scene.add(pathNode.tile.mesh);
             })
             return true;
         }
         return false;
-    }
-
-    getNodeByCoordsInArray(posX, posY, array: Node[]): Node {
-        const objIndex = array.findIndex(obj => obj.xPos === posX &&
-            obj.yPos === posY);
-        if (objIndex > -1) {
-            return array[objIndex];
-        }
-        return null;
     }
 
     isNodeInArray(node: Node, array: Node[]): Boolean {
@@ -210,53 +135,5 @@ export class Astar {
             }
         })
         return lowestNode;
-    }
-
-    measureDistance(startX, startY, targetX, targetY): number {
-        const path = new Path();
-        path.currentPoint = new Vector2(startX,
-            startY);
-        path.lineTo(targetX,
-            targetY);
-        const points = path.getPoints();
-        const geometry = new BufferGeometry().setFromPoints(points);
-        const material = new LineBasicMaterial({ color: 0xffffff });
-        const line = new Line(geometry, material);
-        line.computeLineDistances();
-        // this.scene.add(line)
-        return line.geometry.attributes.lineDistance.getX(line.geometry.attributes.lineDistance.count - 1);
-    }
-
-    renderNode(node: Node, color: string) {
-        const geometry = new THREE.BoxGeometry(this.mapService.pixelSize, this.mapService.pixelSize, this.mapService.pixelSize)
-        const material = new THREE.MeshBasicMaterial({ color: color });
-        const nodeMesh = new THREE.Mesh(geometry, material);
-        material.wireframe = true
-        nodeMesh.position.x = node.xPos
-        nodeMesh.position.y = node.yPos
-        nodeMesh.position.z = 0;
-        this.scene.add(nodeMesh)
-    }
-
-    createNodeFromAt(parentNode, startX, startY, xPosition, yPosition): Node {
-        this.lastId += 1;
-        var hCost = this.measureDistance(xPosition,
-            yPosition,
-            startX,
-            startY);
-        if (parentNode != null) {
-            hCost += parentNode.hCost;
-        }
-        var drawnNode = new Node(
-            this.lastId,
-            parentNode,
-            xPosition,
-            yPosition,
-            this.measureDistance(xPosition,
-                yPosition,
-                this.mapService.targetCube.position.x,
-                this.mapService.targetCube.position.y),
-            hCost)
-        return drawnNode;
     }
 }

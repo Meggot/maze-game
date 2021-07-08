@@ -16,14 +16,14 @@ export class CanvasComponent implements OnInit {
 
   public constructor(private canvasService: CanvasService,
     private mapService: MapService,
-    private pathService: Astar) {
+    private astar: Astar) {
   }
 
   public ngOnInit(): void {
     this.scene = this.canvasService.createScene(this.rendererCanvas);
-    this.canvasService.animate();
     this.mapService.setup(this.scene);
-    this.pathService.setup(this.mapService, this.scene);
+    this.astar.setup(this.scene);
+    this.canvasService.animate();
   }
 
 }
