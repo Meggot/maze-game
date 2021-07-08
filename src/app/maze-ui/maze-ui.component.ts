@@ -16,7 +16,7 @@ export class MazeUiComponent implements OnInit {
   }
 
   pathFind() {
-    this.mapService.tearDown();
+    this.mapService.cleanMap();
     this.astar.pathFind();
   }
 

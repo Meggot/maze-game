@@ -1,93 +1,59 @@
 import { MapService } from './map.services';
-import { Injectable } from '@angular/core';
-import { Path, Vector2, BufferGeometry, LineBasicMaterial, Line } from 'three';
 import { Node } from '../models/nodes';
+import { Tile } from '../models/tile';
 
-@Injectable({ providedIn: 'root' })
-export class NodeService {
+export class NodeManager {
 
-    nodes: Node[] = new Array();
-    lastNodeId: number = 0;
+    nodes: Node[];
+    lastNodeId: number = 1;
 
     constructor(private mapService: MapService) {
+        this.nodes = new Array();
     }
 
-    measureDistance(startX, startY, targetX, targetY): number {
-        const path = new Path();
-        path.currentPoint = new Vector2(startX,
-            startY);
-        path.lineTo(targetX,
-            targetY);
-        const points = path.getPoints();
-        const geometry = new BufferGeometry().setFromPoints(points);
-        const material = new LineBasicMaterial({ color: 0xffffff });
-        const line = new Line(geometry, material).computeLineDistances();
-        this.mapService.scene.add(line)
-        var rawdistance = line.geometry.attributes.lineDistance.getX(line.geometry.attributes.lineDistance.count - 1);
-        return Math.round(rawdistance * 100) / 100
-    }
-
-    generateNeighbourNodes(node: Node, withDiagonals: boolean = true): Node[] {
+    generateNeighbourNodes(node: Node, withDiagonals: boolean): Node[] {
+        var pixel = this.mapService.pixelSize
         var neighbours: Node[] = Array();
 
-        var newNodeXPos = node.xPos;
-        var newNodeYPos = node.yPos + this.mapService.pixelSize;
-        neighbours.push(this.getNodeAtXY(newNodeXPos, newNodeYPos, node))
-
-        newNodeXPos = node.xPos + this.mapService.pixelSize;
-        newNodeYPos = node.yPos;
-        neighbours.push(this.getNodeAtXY(newNodeXPos, newNodeYPos, node))
-
-        newNodeXPos = node.xPos - this.mapService.pixelSize;
-        newNodeYPos = node.yPos;
-        neighbours.push(this.getNodeAtXY(newNodeXPos, newNodeYPos, node))
-
-        newNodeXPos = node.xPos;
-        newNodeYPos = node.yPos - this.mapService.pixelSize;
-        neighbours.push(this.getNodeAtXY(newNodeXPos, newNodeYPos, node))
+        neighbours.push(this.getNodeAtXY(node.xPos, node.yPos + pixel, node))
+        neighbours.push(this.getNodeAtXY(node.xPos + pixel, node.yPos, node))
+        neighbours.push(this.getNodeAtXY(node.xPos - pixel, node.yPos, node))
+        neighbours.push(this.getNodeAtXY(node.xPos, node.yPos - pixel, node))
 
         if (withDiagonals) {
-
-            newNodeXPos = node.xPos - this.mapService.pixelSize;
-            newNodeYPos = node.yPos - this.mapService.pixelSize;
-            neighbours.push(this.getNodeAtXY(newNodeXPos, newNodeYPos, node))
-
-            newNodeXPos = node.xPos + this.mapService.pixelSize;
-            newNodeYPos = node.yPos - this.mapService.pixelSize;
-            neighbours.push(this.getNodeAtXY(newNodeXPos, newNodeYPos, node))
-
-            newNodeXPos = node.xPos - this.mapService.pixelSize;
-            newNodeYPos = node.yPos + this.mapService.pixelSize;
-            neighbours.push(this.getNodeAtXY(newNodeXPos, newNodeYPos, node))
-
-            newNodeXPos = node.xPos + this.mapService.pixelSize
-            newNodeYPos = node.yPos + this.mapService.pixelSize;
-            neighbours.push(this.getNodeAtXY(newNodeXPos, newNodeYPos, node))
+            neighbours.push(this.getNodeAtXY(node.xPos - pixel, node.yPos - pixel, node))
+            neighbours.push(this.getNodeAtXY(node.xPos + pixel, node.yPos - pixel, node))
+            neighbours.push(this.getNodeAtXY(node.xPos - pixel, node.yPos + pixel, node))
+            neighbours.push(this.getNodeAtXY(node.xPos + pixel, node.yPos + pixel, node))
         }
 
         return neighbours;
     }
 
-    getNodeAtXY(x, y, parentNode): Node {
-        this.nodes.forEach(node => {
+    getNodeAtXY(x: number, y: number, parentNode: Node): Node {
+        var createdNode: Node;
+         this.nodes.forEach(node => {
             if (node.xPos == x && node.yPos == y) {
-                return node;
+                createdNode = node;
             }
-        });
-        return this.createNodeAtWithParent(x, y, parentNode)
+        }) ;
+        if (createdNode == null) {
+            createdNode = this.createNodeAtWithParent(x, y, parentNode)
+        }
+        return createdNode;
     }
 
-    creatStartNode(): Node {
-        this.lastNodeId += 1;
-
-        return new Node(this.mapService.startTile,
+    createStartNode(): Node {
+        var startNode = new Node(this.mapService.getTileAt(this.mapService.spawnTileX, this.mapService.spawnTileY),
             this.lastNodeId,
             null,
-            this.mapService.startTile.mesh.position.x,
-            this.mapService.startTile.mesh.position.y,
-            200,
-            200,
-            200);
+            this.mapService.spawnTileX,
+            this.mapService.spawnTileY,
+            2000,
+            2000,
+            2000+2000);
+        this.nodes.push(startNode);
+        return startNode
     }
 
     createNodeAtWithParent(x, y, parentNode): Node {
@@ -95,37 +61,24 @@ export class NodeService {
 
         // The HCOST is how much it costs to get to the current position from start via parents..
         // First how much does it cost to get from parent to this position -
-        // var hCost = this.measureDistance(x,
-        //     y,
-        //     parentNode.xPos,
-        //     parentNode.yPos);
-        var hCost = 1;
-
-        var diff = Math.abs((x+y) - (parentNode.xPos + parentNode.yPos))
-
-        // if (diff == 1) {
-        //     hCost = 1;
-        // } else if (diff == 2){
-        //     hCost = 1.22
-        // }
-
-        // We then add it to the parents HCost and this is our own hcost to get to this point.
-        if (parentNode.tile != this.mapService.startTile) {
-            hCost += parentNode.hCost;
-        }
-
+        var hCost = parentNode.hCost +
+        (parentNode.xPos !== x ||
+            parentNode.yPos! == y
+          ? 1
+          : 1 * 1.41421);
+          
         // The G Cost is the euclidian distance from here to the target.
-        var gCost = this.measureDistance(x,
+        var gCost = this.mapService.measureDistance(x,
             y,
-            this.mapService.targetTile.mesh.position.x,
-            this.mapService.targetTile.mesh.position.y);
+            this.mapService.targetTileX,
+            this.mapService.targetTileY) * 2;
 
         //The F Cost is hCost + GCost.
         var fCost = hCost + gCost;
 
+        var tile = this.mapService.getTileAt(x, y);
         //Create the new node.
-        var drawnNode = new Node(
-            this.mapService.getTileAt(x, y),
+        var drawnNode = new Node(tile,
             this.lastNodeId,
             parentNode,
             x,
@@ -134,6 +87,7 @@ export class NodeService {
             gCost,
             fCost)
 
+        // this.mapService.writeTextAt(fCost, x, y)
         this.nodes.push(drawnNode);
         return drawnNode;
     }

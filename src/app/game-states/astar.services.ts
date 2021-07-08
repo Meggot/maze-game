@@ -2,116 +2,102 @@ import { Injectable } from "@angular/core";
 import { Scene } from "three";
 import { MapService } from "./map.services";
 import { Node } from '../models/nodes';
-import { NodeService } from './nodes.services';
+import { NodeManager } from './nodes.services';
 
 @Injectable({ providedIn: 'root' })
 export class Astar {
 
     scene: Scene;
 
+
+
     openNodes: Node[] = new Array();
     closedNodes: Node[] = new Array();
     pathingNodes: Node[] = new Array();
 
-    constructor(private nodeService: NodeService,
-        private mapService: MapService) {
+    nodeManager: NodeManager;
 
-        }
+    constructor(private mapService: MapService) {
+
+    }
 
     setup(scene: Scene) {
         this.scene = scene;
-
-        this.openNodes = new Array();
-        this.closedNodes = new Array();
-        this.pathingNodes = new Array();
-        
-        this.mapService.setup(scene);
-        this.pathFind();
     }
 
     async pathFind() {
+        this.nodeManager = new NodeManager(this.mapService);
         this.openNodes = new Array();
         this.closedNodes = new Array();
         this.pathingNodes = new Array();
 
-        console.log(this.mapService.startTile)
-        var startNode = this.nodeService.creatStartNode();
+        var startNode = this.nodeManager.createStartNode();
         this.openNodes.push(startNode);
 
         var currentNode: Node;
-        while (true) {
-            if (this.closedNodes.length > 10000) {
+        while (this.openNodes.length !== 0) {
+            if (this.closedNodes.length > 2000) {
                 console.log("Path cannot be found.")
                 break;
             }
-            if (this.openNodes.length == 0) {
-                console.log("Path cannot be found")
-                break;
-            }
-            currentNode = this.findLowestFCostInArray(this.openNodes);
-            if (currentNode == undefined) {
-                console.log("Path is unreachable..")
-                break;
-            }
+
+            var currentNode = this.findLowestFCostInArray(this.openNodes);
             this.removeNodeFromArray(currentNode, this.openNodes);
+
             this.closedNodes.push(currentNode)
 
             if (this.isNodeOnTarget(currentNode)) {
                 console.log('Path has been found!')
                 break;
             }
-            var neigbours = this.nodeService.generateNeighbourNodes(currentNode)
+
+            var neigbours = this.nodeManager.generateNeighbourNodes(currentNode, true)
+
             neigbours.forEach(neighbourNode => {
-                console.log(neighbourNode)
-                console.log("vs")
-                console.log(currentNode)
-                if (!this.isTraversable(neighbourNode) || this.isNodeInArray(neighbourNode, this.closedNodes)) {
-                    console.log("Adding node " + currentNode + " To closed nodes.")
-                    this.closedNodes.push(neighbourNode)
-                } else if (neighbourNode.fCost <= currentNode.fCost || this.isNodeInArray(neighbourNode, this.openNodes)) {
-                    console.log("Adding node " + currentNode + "To open nodes.")
-                    this.openNodes.push(neighbourNode);
+                if (!this.isNodeInArray(neighbourNode, this.closedNodes)) {
+                    const nextHCost =
+                    currentNode.hCost +
+                    (neighbourNode.xPos !== currentNode.xPos||
+                    neighbourNode.yPos! == currentNode.yPos
+                      ? 1
+                      : 1 * 1.41421);
+                    if (!neighbourNode.tile.isTraversable) {
+                        neighbourNode.tile.setColour("black")
+                        this.closedNodes.push(neighbourNode)
+                    } else if (!this.isNodeInArray(neighbourNode, this.openNodes) || nextHCost < neighbourNode.hCost){
+                        neighbourNode.hCost = nextHCost
+                        neighbourNode.parent = currentNode;
+                        neighbourNode.tile.setColour("red")
+                        this.openNodes.push(neighbourNode);
+                    }
                 }
             })
         }
-    }
-    isTraversable(node: Node): Boolean {
-        var isTraversable = node.tile.isTraversable;
-        if  (node.xPos == 5 &&  node.yPos !=2)  {
-            return false;
-        }
-        if (!isTraversable){
-            console.log("Node " + node + " is NOT Traversable.")
-            return false;
-        }
-        return isTraversable;
     }
 
-    isNodeOnTarget(node: Node): Boolean {
-        if (node.xPos == this.mapService.targetTile.mesh.position.x &&
-            node.yPos == this.mapService.targetTile.mesh.position.y) {
-            this.pathingNodes.push(node)
-            while (node.id != 1) {
-                if (node.parent == null) {
-                    console.log('Found path, it is ' + this.pathingNodes.length + "long!")
-                    break;
-                }
-                this.pathingNodes.push(node)
-                node = node.parent;
-            }
-            this.pathingNodes.forEach(pathNode => {
-                console.log("Setting " + pathNode + " as yellow..")
-                pathNode.tile.setColour("yellow")
-                this.scene.add(pathNode.tile.mesh);
-            })
+
+    isNodeInArray(node: Node, array: Node[]) {
+        const objIndex = array.findIndex(obj => obj.id === node.id);
+        if (objIndex > -1) {
             return true;
         }
         return false;
     }
 
-    isNodeInArray(node: Node, array: Node[]): Boolean {
-        const objIndex = array.findIndex(obj => obj.id === node.id);
-        if (objIndex > -1) {
+
+    isNodeOnTarget(node: Node): Boolean {
+        if (node.xPos == this.mapService.targetTileX &&
+            node.yPos == this.mapService.targetTileY) {
+            this.pathingNodes.push(node)
+            while (true) {
+                if (node.id == 1) {
+                    console.log('Found path, it is ' + this.pathingNodes.length + "long!")
+                    break;
+                }
+                node.tile.setColour("yellow")
+                this.pathingNodes.push(node)
+                node = node.parent;
+            }
             return true;
         }
         return false;

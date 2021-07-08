@@ -41,6 +41,7 @@ export class CanvasService implements OnDestroy {
             10, window.innerWidth / window.innerHeight, 0.2, 1000
         );
         this.camera.position.z = 250;
+        this.scene
 
         // const near = 1;
         // const far = 300;
@@ -49,7 +50,6 @@ export class CanvasService implements OnDestroy {
         // this.camera.position.set(0, 0, 250);
 
         this.scene.add(this.camera);
-
         // soft white light
         this.light = new THREE.AmbientLight(0x404040);
         this.light.position.z = 250;
@@ -114,7 +114,8 @@ export class CanvasService implements OnDestroy {
     onMouseDown(event) {
         this.painting = true;
         var vector = this.getFloorVectorFromClick(event.clientX, event.clientY)
-        this.mapService.createObstructionAt(vector.x, vector.y)
+        this.mapService.getTileAt(vector.x, vector.y).setColour("black")
+        this.mapService.getTileAt(vector.x, vector.y).isTraversable = false;
     }
 
     onMouseUp(event) {
@@ -124,7 +125,8 @@ export class CanvasService implements OnDestroy {
     onMouseMove(event) {
         if (this.painting) {
             var vector = this.getFloorVectorFromClick(event.clientX, event.clientY)
-            this.mapService.createObstructionAt(vector.x, vector.y)
+            this.mapService.getTileAt(vector.x , vector.y).setColour("black")
+            this.mapService.getTileAt(vector.x, vector.y).isTraversable = false;
         }
     }
 
@@ -139,8 +141,8 @@ export class CanvasService implements OnDestroy {
         this.raycaster.ray.intersectPlane(this.mapService.plane,
             instersectVector);
 
-        const xPos: number = Math.round(instersectVector.x)
-        const yPos: number = Math.round(instersectVector.y)
+        const xPos: number = Math.round(instersectVector.x) + this.mapService.offsetX
+        const yPos: number = Math.round(instersectVector.y) + this.mapService.offsetY
         return new Vector3(xPos, yPos, 0);
     }
 }

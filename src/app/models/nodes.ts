@@ -3,6 +3,8 @@ import { Tile } from './tile';
 
 export class Node {
 
+    public state: String = "OPEN";
+
     constructor(
         public tile: Tile,
         public id: number,
@@ -11,7 +13,8 @@ export class Node {
         public yPos: number,
         public hCost: number,
         public gCost: number,
-        public fCost: number) {
+        public fCost: number,
+        ) {
         }
 
 
