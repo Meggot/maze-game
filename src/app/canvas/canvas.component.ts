@@ -1,10 +1,10 @@
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import { MapService } from '../game-states/map.services';
-import { Astar } from '../algorithm/astar.services';
 import { CanvasService } from './canvas.service';
 import { BLANK_MAP, FOREST_MAP, MAZE_MAP } from '../inputs/maps.services';
 import { PathFindAlgo } from '../algorithm/PathFindAlgo.interface';
 import { Vector2 } from 'three';
+import { ErrorAlgo } from '../algorithm/errorAlgo.interface';
 
 @Component({
   selector: 'app-canvas',
@@ -68,7 +68,7 @@ export class CanvasComponent implements OnInit {
 
   pathStart() {
     //YOUR ALGO HERE!
-    this.pathFindAlgo = new Astar(this.mapService);
+    this.pathFindAlgo = new ErrorAlgo();
 
     //Clean previous paths.
     this.mapService.cleanMap();

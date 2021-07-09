@@ -1,6 +1,5 @@
 import { MapService } from './map.services';
 import { Node } from '../models/nodes';
-import { Tile } from '../models/tile';
 
 export class NodeManager {
 
@@ -49,9 +48,7 @@ export class NodeManager {
             null,
             this.mapService.spawnTileX,
             this.mapService.spawnTileY,
-            2000,
-            2000,
-            2000+2000);
+            );
         this.nodes.push(startNode);
         return startNode
     }
@@ -59,35 +56,14 @@ export class NodeManager {
     createNodeAtWithParent(x, y, parentNode): Node {
         this.lastNodeId += 1;
 
-        // The HCOST is how much it costs to get to the current position from start via parents..
-        // First how much does it cost to get from parent to this position -
-        var hCost = parentNode.hCost +
-        (parentNode.xPos !== x ||
-            parentNode.yPos! == y
-          ? 1
-          : 1 * 1.41421);
-          
-        // The G Cost is the euclidian distance from here to the target.
-        var gCost = this.mapService.measureDistance(x,
-            y,
-            this.mapService.targetTileX,
-            this.mapService.targetTileY) * 2;
-
-        //The F Cost is hCost + GCost.
-        var fCost = hCost + gCost;
-
         var tile = this.mapService.getTileAt(x, y);
-        //Create the new node.
+
         var drawnNode = new Node(tile,
             this.lastNodeId,
             parentNode,
             x,
-            y,
-            hCost,
-            gCost,
-            fCost)
+            y)
 
-        // this.mapService.writeTextAt(fCost, x, y)
         this.nodes.push(drawnNode);
         return drawnNode;
     }
