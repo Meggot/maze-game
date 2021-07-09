@@ -37,17 +37,13 @@ export class CanvasComponent implements OnInit {
   }
 
   ngOnInit(): void {
-        //SETUP THREE.JS CANVAS
-        this.scene = this.canvasService.createScene(this.renderCanvas);
+    //SETUP THREE.JS CANVAS
+    this.scene = this.canvasService.createScene(this.renderCanvas);
 
-        this.canvasService.animate();
-        console.log(this.mapSelection);
-    
-        this.setupMap()
-  }
+    this.canvasService.animate();
+    console.log(this.mapSelection);
 
-  getMapFromId() {
-
+    this.setupMap()
   }
 
   setMap(mapName: string) {
