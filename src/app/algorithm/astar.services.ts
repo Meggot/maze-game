@@ -19,6 +19,7 @@ export class Astar implements PathFindAlgo {
         this.nodeManager = new NodeManager(this.mapService);
         this.openNodes = new Array();
         this.closedNodes = new Array();
+
         this.pathingNodes = new Array();
 
         var startNode = this.nodeManager.createStartNode();
@@ -41,7 +42,7 @@ export class Astar implements PathFindAlgo {
                 break;
             }
 
-            var neigbours = this.nodeManager.generateNeighbourNodes(currentNode, false)
+            var neigbours = this.nodeManager.generateNeighbourNodes(currentNode, true)
 
             neigbours.forEach(neighbourNode => {
                 if (!this.isNodeInArray(neighbourNode, this.closedNodes)) {

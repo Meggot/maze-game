@@ -5,7 +5,6 @@ import { CanvasService } from './canvas.service';
 import { BLANK_MAP, FOREST_MAP, MAZE_MAP } from '../inputs/maps.services';
 import { PathFindAlgo } from '../algorithm/PathFindAlgo.interface';
 import { Vector2 } from 'three';
-import { ErrorAlgo } from '../algorithm/errorAlgo';
 
 @Component({
   selector: 'app-canvas',
