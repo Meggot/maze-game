@@ -22,6 +22,10 @@ The maps are in the /inputs/ folder. They are represented as number grids of til
  2 = Start point for the algorithm.
  3 = End point for the algorith,
 
+Path Find Algo:
+
+The goal of the Kata is to implement this PathFindAlgo pathFind() algorithm and return an array of Vector2 (this is just x + y) coordinats of the path going from the start point (represented by 2), to the end point (represented by 3). This will then be drawn by the canvas service as a nice green line.
+
  AID FUNCTIONS AND SERVICES:
 
  MapService: This holds all the drawings for the maps, this is what actually decides what to display on the canvas and is aware of all the tiles. The binary map is processed by this service and provides convinence methods for measuring distance, getting tiles at certain coordinates.
