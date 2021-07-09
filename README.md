@@ -8,6 +8,7 @@ MAPS:
 
 The maps are in the /inputs/ folder. They are represented as number grids of tiles:
 
+```
 [
     [2], [0], [0],
     [0], [1], [0],
@@ -15,6 +16,7 @@ The maps are in the /inputs/ folder. They are represented as number grids of til
     [0], [0], [3]
 ]
 
+```
  0 =  Free space that is traversable.
  1 = Obstruction like a wall or something.
  2 = Start point for the algorithm.
