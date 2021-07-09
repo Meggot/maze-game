@@ -1,23 +1,29 @@
-import { Component, OnInit } from '@angular/core';
-import { Astar } from '../game-states/astar.services';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Vector2 } from 'three';
+import { PathFindAlgo } from '../algorithm/PathFindAlgo.interface';
 import { MapService } from '../game-states/map.services';
 
 @Component({
   selector: 'app-maze-ui',
-  templateUrl: './maze-ui.component.html',
-  styleUrls: ['./maze-ui.component.css']
+  templateUrl: './maze-ui.component.html'
 })
-export class MazeUiComponent implements OnInit {
+export class MazeUiComponent {
 
-  constructor(private astar: Astar,
-    private mapService: MapService) { }
+  @Input('mapService')
+  private mapService: MapService
 
-  ngOnInit(): void {
-  }
+  @Input('pathFindAlgo')
+  private pathFindAlgo: PathFindAlgo;
+
+  @Output('pathFindOutput')
+  private pathFindEvent = new EventEmitter<Vector2[]>();
+
+  constructor() { }
 
   pathFind() {
     this.mapService.cleanMap();
-    this.astar.pathFind();
+    var path = this.pathFindAlgo.pathFind();
+    this.pathFindEvent.emit(path)
   }
 
 }

@@ -1,4 +1,15 @@
-<div class="engine-wrapper" >
-    <canvas #rendererCanvas
-    id="renderCanvas" ></canvas>
-</div>
+<header style="padding:0px">
+    <button (click)="pathStart()" class="btn btn-primary">CLICK ME TO FIND NEW PATH</button>
+    Last Path Found was: {{ lastPathFindLength }} long!
+    <select id="mapSelection" (change)="setMap($event.target.value)">
+        <option *ngFor="let map of maps; index as i">
+            {{ map.mapName }}
+        </option>
+    </select>
+</header>
+
+<table>
+    <tr>
+        <td> <canvas #renderCanvas id="renderCanvas"></canvas></td>
+    </tr>
+</table>

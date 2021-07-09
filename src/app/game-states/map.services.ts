@@ -1,15 +1,12 @@
 import * as THREE from 'three';
-import { Injectable } from '@angular/core';
 import { Tile } from '../models/tile';
 import { Path, Vector2, BufferGeometry, LineBasicMaterial, Line } from 'three';
 
-@Injectable({ providedIn: 'root' })
 export class MapService {
 
     public tiles: Tile[][];
     public pixelSize: number = 1;
 
-    public scene: THREE.Scene;
     public floor: THREE.Mesh;
     public plane: THREE.Plane;
 
@@ -26,6 +23,11 @@ export class MapService {
     public offsetX: number = 20;
     public offsetY: number = 16;
 
+    constructor(private scene: THREE.Scene,
+        private binaryMap: number[][]) {
+            this.setup()
+        }
+
     getTileAt(x: number, y: number): Tile {
         var tile;
         try {
@@ -39,21 +41,20 @@ export class MapService {
         return tile;
     }
 
-    setup(scene: THREE.Scene, binaryMap: number[][]): void {
-        this.scene = scene;
+    setup(): void {
         this.tiles = new Array()
-        for (let x = 0; x < binaryMap.length; x++) {
+        for (let x = 0; x < this.binaryMap.length; x++) {
             this.tiles[x] = new Array();
-            for (let y = 0; y < binaryMap[x].length; y++) {
-                const isTraversable = binaryMap[x][y] == 1 ? false : true;
+            for (let y = 0; y < this.binaryMap[x].length; y++) {
+                const isTraversable = this.binaryMap[x][y] == 1 ? false : true;
                 var createdTile = this.createTile(x, y, isTraversable)
                 this.tiles[x][y] = createdTile;
-                if (binaryMap[x][y] == 2) {
+                if (this.binaryMap[x][y] == 2) {
                     this.spawnTileX = x;
                     this.spawnTileY = y;
                     createdTile.setColour("green");
                 }
-                if (binaryMap[x][y] == 3) {
+                if (this.binaryMap[x][y] == 3) {
                     this.targetTileX = x;
                     this.targetTileY = y;
                     createdTile.setColour("red");
@@ -67,6 +68,14 @@ export class MapService {
         this.floor = new THREE.Mesh(geometry, material);
         this.scene.add(this.floor);
     }
+
+    public drawPath(pathVector: THREE.Vector2[]) {
+            //Have to Offset by X and Y to get in correct place.. (Would prefer to use setFromPoints)
+        pathVector.forEach(nodeVector => {
+            this.getTileAt(nodeVector.x, nodeVector.y).setColour("green");
+        })
+
+      }
 
     public cleanMap() {
         this.tiles.forEach(tileRow => {

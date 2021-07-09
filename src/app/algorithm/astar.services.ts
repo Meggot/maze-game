@@ -1,15 +1,10 @@
-import { Injectable } from "@angular/core";
-import { Scene } from "three";
-import { MapService } from "./map.services";
+import { MapService } from "../game-states/map.services";
 import { Node } from '../models/nodes';
-import { NodeManager } from './nodes.services';
+import { NodeManager } from '../game-states/nodes.services';
+import { Vector2 } from "three";
+import { PathFindAlgo } from "./PathFindAlgo.interface";
 
-@Injectable({ providedIn: 'root' })
-export class Astar {
-
-    scene: Scene;
-
-
+export class Astar implements PathFindAlgo {
 
     openNodes: Node[] = new Array();
     closedNodes: Node[] = new Array();
@@ -18,14 +13,9 @@ export class Astar {
     nodeManager: NodeManager;
 
     constructor(private mapService: MapService) {
-
     }
 
-    setup(scene: Scene) {
-        this.scene = scene;
-    }
-
-    async pathFind() {
+    public pathFind(): Vector2[] {
         this.nodeManager = new NodeManager(this.mapService);
         this.openNodes = new Array();
         this.closedNodes = new Array();
@@ -51,7 +41,7 @@ export class Astar {
                 break;
             }
 
-            var neigbours = this.nodeManager.generateNeighbourNodes(currentNode, true)
+            var neigbours = this.nodeManager.generateNeighbourNodes(currentNode, false)
 
             neigbours.forEach(neighbourNode => {
                 if (!this.isNodeInArray(neighbourNode, this.closedNodes)) {
@@ -62,21 +52,26 @@ export class Astar {
                       ? 1
                       : 1 * 1.41421);
                     if (!neighbourNode.tile.isTraversable) {
-                        neighbourNode.tile.setColour("black")
                         this.closedNodes.push(neighbourNode)
                     } else if (!this.isNodeInArray(neighbourNode, this.openNodes) || nextHCost < neighbourNode.hCost){
                         neighbourNode.hCost = nextHCost
                         neighbourNode.parent = currentNode;
-                        neighbourNode.tile.setColour("red")
                         this.openNodes.push(neighbourNode);
                     }
                 }
             })
         }
+        if (this.pathingNodes.length <= 0) {
+            throw Error("Pathfind was not successful.")
+        }
+        var vectorArray: Vector2[] = new Array();
+        this.pathingNodes.forEach(pathNode => {
+            vectorArray.push(new Vector2(pathNode.xPos, pathNode.yPos))
+        })
+        return vectorArray.reverse();
     }
 
-
-    isNodeInArray(node: Node, array: Node[]) {
+    private isNodeInArray(node: Node, array: Node[]) {
         const objIndex = array.findIndex(obj => obj.id === node.id);
         if (objIndex > -1) {
             return true;
@@ -84,8 +79,7 @@ export class Astar {
         return false;
     }
 
-
-    isNodeOnTarget(node: Node): Boolean {
+    private isNodeOnTarget(node: Node): Boolean {
         if (node.xPos == this.mapService.targetTileX &&
             node.yPos == this.mapService.targetTileY) {
             this.pathingNodes.push(node)
@@ -94,23 +88,24 @@ export class Astar {
                     console.log('Found path, it is ' + this.pathingNodes.length + "long!")
                     break;
                 }
-                node.tile.setColour("yellow")
                 this.pathingNodes.push(node)
                 node = node.parent;
             }
+            //Add start node to the pathing nodes.
+            this.pathingNodes.push(this.nodeManager.getNodeAtXY(this.mapService.spawnTileX, this.mapService.spawnTileY, node));
             return true;
         }
         return false;
     }
 
-    removeNodeFromArray(node: Node, array: Node[]) {
+    private removeNodeFromArray(node: Node, array: Node[]) {
         const objIndex = array.findIndex(obj => obj.id === node.id);
         if (objIndex > -1) {
             array = array.splice(objIndex, 1);
         }
     }
 
-    findLowestFCostInArray(array: Node[]): Node {
+    private findLowestFCostInArray(array: Node[]): Node {
         var lowestNode: Node;
         array.forEach(node => {
             if (lowestNode == null) {

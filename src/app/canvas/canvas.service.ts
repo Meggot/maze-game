@@ -8,13 +8,13 @@ export class CanvasService implements OnDestroy {
     private canvas: HTMLCanvasElement;
     private renderer: THREE.WebGLRenderer;
     private camera: THREE.PerspectiveCamera;
+    public mapService: MapService;
 
     public scene: THREE.Scene;
     private light: THREE.AmbientLight;
     private frameId: number = null;
 
-    public constructor(private ngZone: NgZone,
-        private mapService: MapService) {
+    public constructor(private ngZone: NgZone) {
     }
 
     public ngOnDestroy(): void {
@@ -24,8 +24,10 @@ export class CanvasService implements OnDestroy {
     }
 
     public createScene(canvas: ElementRef<HTMLCanvasElement>): THREE.Scene {
-        // The first step is to get the reference of the canvas element from our HTML document
+        
         this.canvas = canvas.nativeElement;
+        this.canvas.width = 60;
+        this.canvas.height = 60;
 
         this.renderer = new THREE.WebGLRenderer({
             canvas: this.canvas,
@@ -34,23 +36,15 @@ export class CanvasService implements OnDestroy {
         });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
 
-        // create the scene
         this.scene = new THREE.Scene();
 
         this.camera = new THREE.PerspectiveCamera(
             10, window.innerWidth / window.innerHeight, 0.2, 1000
         );
+
         this.camera.position.z = 250;
-        this.scene
-
-        // const near = 1;
-        // const far = 300;
-        // this.camera = new THREE.OrthographicCamera(0, 300, 0, 150, near, far);
-        // this.camera.zoom = 1;
-        // this.camera.position.set(0, 0, 250);
-
         this.scene.add(this.camera);
-        // soft white light
+
         this.light = new THREE.AmbientLight(0x404040);
         this.light.position.z = 250;
         this.scene.add(this.light);
@@ -131,7 +125,6 @@ export class CanvasService implements OnDestroy {
     }
 
     getFloorVectorFromClick(posX, posY): Vector3{
-
         this.mouse.x = (posX / window.innerWidth) * 2 - 1;
         this.mouse.y = -(posY / window.innerHeight) * 2 + 1;
 
